@@ -1,0 +1,15 @@
+[Unit]
+Description=Autonomous Multi-Agent Trading System
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/trading_agent
+ExecStart=/home/ubuntu/.cargo/bin/uv run python main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

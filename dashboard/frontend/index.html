@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Multi-Agent Trading System | Indian Stock Markets</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Header Nav -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-icon">📈</div>
+      <div>
+        <h1>Multi-Agent Trading Intelligence</h1>
+        <div class="subtitle">Indian Stock Markets (NSE) • Autonomous Execution & Risk Engine</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <div id="live-clock" style="font-family: monospace; font-size: 14px; font-weight: 600; color: #00e676; background: rgba(0, 230, 118, 0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.2);"></div>
+      <div class="status-badge" id="system-status">
+        <div class="dot-pulse"></div>
+        <span>Market Live (9:15 - 15:30 IST)</span>
+      </div>
+      <button class="btn-danger" onclick="triggerKillSwitch()">🚨 Emergency Kill-Switch</button>
+    </div>
+  </header>
+
+  <!-- Key Metrics Row -->
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-title">Net Realized PnL</div>
+      <div class="card-value val-green" id="val-pnl">₹0.00</div>
+      <div class="subtitle" id="val-return">+0.00% Return</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Portfolio Equity</div>
+      <div class="card-value" id="val-equity">₹1,00,000</div>
+      <div class="subtitle" id="val-cash">Cash: ₹1,00,000</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Win Rate (%)</div>
+      <div class="card-value val-green" id="val-winrate">75.0%</div>
+      <div class="subtitle">Win / Loss Ratio</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Profit Factor</div>
+      <div class="card-value" id="val-profit-factor">1.85</div>
+      <div class="subtitle">Target: > 1.5</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Max Drawdown</div>
+      <div class="card-value val-red" id="val-drawdown">0.50%</div>
+      <div class="subtitle">Max Threshold: 2.0%</div>
+    </div>
+  </div>
+
+  <!-- Dashboard Split View -->
+  <div class="dashboard-layout">
+    <!-- Active Positions -->
+    <div class="card">
+      <div class="section-title">📌 Active Positions & Live Orders</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Qty</th>
+            <th>Avg Entry</th>
+            <th>LTP</th>
+            <th>Stop Loss</th>
+            <th>Target</th>
+            <th>Unrealized PnL</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="positions-tbody">
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">No active open positions</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live Multi-Agent Log Console -->
+    <div class="card">
+      <div class="section-title">🤖 Sub-Agent Decision Stream</div>
+      <div class="console-box" id="console-stream">
+        <div class="log-entry">
+          <span class="log-time">[09:15:00]</span>
+          <span class="log-INFO">[System] Multi-Agent Engine initialized. Streaming NSE stock telemetry...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
