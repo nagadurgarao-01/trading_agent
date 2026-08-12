@@ -35,7 +35,7 @@ class TradingSettings(BaseModel):
     DHAN_ACCESS_TOKEN: str = os.getenv("DHAN_ACCESS_TOKEN", "")
     
     # Dashboard Server Config
-    DASHBOARD_HOST: str = "127.0.0.1"
+    DASHBOARD_HOST: str = os.getenv("DASHBOARD_HOST", "0.0.0.0")
     DASHBOARD_PORT: int = 8000
     WEBSOCKET_URL: str = "ws://127.0.0.1:8000/ws/telemetry"
     DASHBOARD_USER: str = os.getenv("DASHBOARD_USER", "admin")

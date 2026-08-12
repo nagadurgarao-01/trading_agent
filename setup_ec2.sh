@@ -7,9 +7,11 @@ echo "=== AWS EC2 TRADING AGENT SETUP ==="
 sudo apt-get update -y
 sudo apt-get install -y git curl python3-pip
 
-# 2. Install uv package manager
+# 2. Install uv package manager & project dependencies
 curl -LsSf https://astral.sh/uv/install.sh | sh
-source $HOME/.cargo/env
+export PATH="$HOME/.local/bin:$PATH"
+uv venv
+uv pip install -r requirements.txt
 
 # 3. Enable & start systemd service
 sudo cp trading_agent.service /etc/systemd/system/

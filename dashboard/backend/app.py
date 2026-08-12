@@ -36,6 +36,14 @@ async def get_dashboard(user: str = Depends(authenticate)):
             return f.read()
     return "<h1>Trading Agent Dashboard Backend Running</h1>"
 
+@app.get("/api/config")
+async def get_config():
+    return JSONResponse({
+        "env": settings.ENV.lower(),
+        "broker": settings.BROKER_TYPE,
+        "initial_capital": settings.INITIAL_CAPITAL
+    })
+
 @app.websocket("/ws/telemetry")
 async def websocket_endpoint(websocket: WebSocket):
     await telemetry_hub.connect(websocket)

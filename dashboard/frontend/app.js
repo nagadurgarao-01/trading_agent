@@ -50,6 +50,61 @@ function updateMetrics(metrics) {
   returnEl.textContent = `${metrics.total_return_pct >= 0 ? '+' : ''}${metrics.total_return_pct.toFixed(2)}% Return`;
   equityEl.textContent = `₹${metrics.portfolio_value.toLocaleString('en-IN')}`;
   cashEl.textContent = `Cash: ₹${metrics.cash_balance.toLocaleString('en-IN')}`;
+
+  // Update Live Readiness Progress Banner
+  updateLiveReadinessProgress(metrics.total_trades || 0, pnl, metrics.avg_slippage_pct || 0);
+}
+
+function updateLiveReadinessProgress(totalTradesCount, realizedPnl, avgSlippagePct) {
+  const badge = document.getElementById("readiness-status-badge");
+  const progressText = document.getElementById("readiness-progress-text");
+  const progressBar = document.getElementById("readiness-progress-bar");
+  const tradesCountEl = document.getElementById("readiness-trades-count");
+  const expectancyEl = document.getElementById("readiness-expectancy");
+  const slippageEl = document.getElementById("readiness-slippage");
+  const ciEl = document.getElementById("readiness-ci");
+
+  if (!badge) return;
+
+  const targetTrades = 50;
+  const count = totalTradesCount || 0;
+  const pct = Math.min(100, Math.round((count / targetTrades) * 100));
+
+  if (tradesCountEl) tradesCountEl.textContent = `${count} / ${targetTrades} Trades`;
+  if (progressText) progressText.textContent = `${count} / ${targetTrades} Trades Completed (${pct}%)`;
+  if (progressBar) progressBar.style.width = `${pct}%`;
+
+  const expectancy = count > 0 ? (realizedPnl / count) : 0;
+  if (expectancyEl) {
+    expectancyEl.textContent = `₹${expectancy.toFixed(2)} / trade (Target > +₹1,330)`;
+    expectancyEl.style.color = expectancy >= 1330 ? "#00e676" : "#ffffff";
+  }
+
+  const slippage = avgSlippagePct || 0;
+  if (slippageEl) {
+    slippageEl.textContent = `${slippage.toFixed(4)}% (< 0.08% target)`;
+    slippageEl.style.color = slippage < 0.08 ? "#00e676" : "#ff5252";
+  }
+
+  if (count < targetTrades) {
+    badge.textContent = `🔒 IN PROGRESS (${count}/${targetTrades} Trades)`;
+    badge.style.color = "#ffb300";
+    badge.style.background = "rgba(255, 179, 0, 0.15)";
+    badge.style.borderColor = "rgba(255, 179, 0, 0.3)";
+    if (ciEl) ciEl.textContent = "Evaluating... (Needs N=50)";
+  } else if (expectancy >= 1330 && slippage < 0.08) {
+    badge.textContent = "🟢 READY FOR LIVE DEPLOYMENT (STAGE 1 GO)";
+    badge.style.color = "#00e676";
+    badge.style.background = "rgba(0, 230, 118, 0.15)";
+    badge.style.borderColor = "rgba(0, 230, 118, 0.3)";
+    if (ciEl) ciEl.textContent = "CI Excludes 0 (Ready)";
+  } else {
+    badge.textContent = "🟡 AMBIGUOUS — EXTEND (+50 TRADES)";
+    badge.style.color = "#ffb300";
+    badge.style.background = "rgba(255, 179, 0, 0.15)";
+    badge.style.borderColor = "rgba(255, 179, 0, 0.3)";
+    if (ciEl) ciEl.textContent = "CI Crosses 0 (Extend)";
+  }
 }
 
 function renderPositions(positions) {
@@ -107,9 +162,33 @@ function updateClock() {
   }
 }
 
+async function loadTradingMode() {
+  const badge = document.getElementById("trading-mode-badge");
+  if (!badge) return;
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.env === "live") {
+      badge.textContent = "⚡ LIVE MODE (" + data.broker.toUpperCase() + ")";
+      badge.style.color = "#ffb300";
+      badge.style.background = "rgba(255, 179, 0, 0.15)";
+      badge.style.borderColor = "rgba(255, 179, 0, 0.3)";
+    } else {
+      badge.textContent = "📄 PAPER MODE (SIMULATED)";
+      badge.style.color = "#64b5f6";
+      badge.style.background = "rgba(100, 181, 246, 0.15)";
+      badge.style.borderColor = "rgba(100, 181, 246, 0.3)";
+    }
+  } catch (err) {
+    console.error("Failed to load mode config", err);
+  }
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", () => {
   initWebSocket();
   updateClock();
+  loadTradingMode();
   setInterval(updateClock, 1000);
 });

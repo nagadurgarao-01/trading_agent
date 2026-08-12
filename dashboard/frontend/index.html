@@ -18,6 +18,7 @@
     </div>
 
     <div style="display: flex; gap: 16px; align-items: center;">
+      <div id="trading-mode-badge" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #64b5f6; background: rgba(100, 181, 246, 0.15); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(100, 181, 246, 0.3);">📄 PAPER MODE</div>
       <div id="live-clock" style="font-family: monospace; font-size: 14px; font-weight: 600; color: #00e676; background: rgba(0, 230, 118, 0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.2);"></div>
       <div class="status-badge" id="system-status">
         <div class="dot-pulse"></div>
@@ -26,6 +27,30 @@
       <button class="btn-danger" onclick="triggerKillSwitch()">🚨 Emergency Kill-Switch</button>
     </div>
   </header>
+
+  <!-- Live Mode Readiness Tracker Banner -->
+  <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(100, 181, 246, 0.3); background: rgba(18, 25, 38, 0.95);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 15px; font-weight: 700; color: #e0e0e0;">🎯 Live Mode Readiness Progress</span>
+        <span id="readiness-status-badge" style="font-family: monospace; font-size: 12px; font-weight: 700; color: #ffb300; background: rgba(255, 179, 0, 0.15); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255, 179, 0, 0.3);">🔒 IN PROGRESS (0/50 Trades)</span>
+      </div>
+      <div style="font-family: monospace; font-size: 13px; color: #90caf9;" id="readiness-progress-text">0 / 50 Trades Completed (0%)</div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
+      <div id="readiness-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #2196f3, #00e676); transition: width 0.4s ease;"></div>
+    </div>
+
+    <!-- Readiness Criteria Checklist -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12px; color: #b0bec5;">
+      <div>• Sample Gate: <strong id="readiness-trades-count" style="color: #fff;">0 / 50 Trades</strong></div>
+      <div>• Realized Expectancy: <strong id="readiness-expectancy" style="color: #fff;">₹0 / trade (Target > +₹1,330)</strong></div>
+      <div>• Avg Slippage: <strong id="readiness-slippage" style="color: #00e676;">0.00% (< 0.08% target)</strong></div>
+      <div>• 95% Confidence Interval: <strong id="readiness-ci" style="color: #ffb300;">Evaluating...</strong></div>
+    </div>
+  </div>
 
   <!-- Key Metrics Row -->
   <div class="kpi-grid">
