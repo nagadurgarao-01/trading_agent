@@ -16,13 +16,17 @@ class PaperBroker(BaseBroker):
     def get_account_balance(self) -> Dict[str, float]:
         unrealized_pnl = sum(pos.get("unrealized_pnl", 0.0) for pos in self.positions.values())
         portfolio_value = self.cash_balance + sum(pos["qty"] * pos["current_price"] for pos in self.positions.values())
+        total_trades = len(self.order_history)
+        avg_slippage = (sum(o.get("realized_slippage_pct", 0.0) for o in self.order_history) / total_trades) if total_trades > 0 else 0.0
         return {
             "cash_balance": round(self.cash_balance, 2),
             "portfolio_value": round(portfolio_value, 2),
             "realized_pnl": round(self.realized_pnl, 2),
             "unrealized_pnl": round(unrealized_pnl, 2),
             "initial_capital": self.initial_capital,
-            "total_return_pct": round(((portfolio_value - self.initial_capital) / self.initial_capital) * 100, 2)
+            "total_return_pct": round(((portfolio_value - self.initial_capital) / self.initial_capital) * 100, 2),
+            "total_trades": total_trades,
+            "avg_slippage_pct": round(avg_slippage, 4)
         }
 
     def place_order(self, symbol: str, action: str, quantity: int, order_type: str = "MARKET", limit_price: float = 0.0, current_market_price: float = 0.0, stop_loss: float = 0.0, target: float = 0.0) -> Dict[str, Any]:
