@@ -39,6 +39,6 @@ class TradingSettings(BaseModel):
     DASHBOARD_PORT: int = 8000
     WEBSOCKET_URL: str = "ws://127.0.0.1:8000/ws/telemetry"
     DASHBOARD_USER: str = os.getenv("DASHBOARD_USER", "admin")
-    DASHBOARD_PASS: str = os.getenv("DASHBOARD_PASS", "admin123")
+    DASHBOARD_PASS: str = os.getenv("DASHBOARD_PASS", "CHANGE_ME_SECURE_PASSWORD")
 
 settings = TradingSettings()
