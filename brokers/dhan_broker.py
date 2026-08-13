@@ -1,6 +1,7 @@
 import requests
 from typing import Dict, List, Any
 from brokers.base_broker import BaseBroker
+from brokers.instruments import get_dhan_security_id
 from config.settings import settings
 from utils.logger import logger
 
@@ -59,6 +60,7 @@ class DhanBroker(BaseBroker):
     def place_order(self, symbol: str, action: str, quantity: int, order_type: str = "MARKET", limit_price: float = 0.0, current_market_price: float = 0.0, stop_loss: float = 0.0, target: float = 0.0) -> Dict[str, Any]:
         """Places a live trade order on DhanHQ (NSE Equity Intraday / MIS)."""
         clean_symbol = symbol.replace(".NS", "")
+        sec_id = get_dhan_security_id(symbol)
         url = f"{self.base_url}/orders"
         
         payload = {
@@ -69,7 +71,7 @@ class DhanBroker(BaseBroker):
             "orderType": "MARKET" if order_type == "MARKET" else "LIMIT",
             "validity": "DAY",
             "tradingSymbol": clean_symbol,
-            "securityId": "", # Handled by Dhan symbol resolution
+            "securityId": sec_id,
             "quantity": quantity,
             "price": limit_price if order_type == "LIMIT" else 0.0,
             "triggerPrice": 0.0,
@@ -80,8 +82,14 @@ class DhanBroker(BaseBroker):
             resp = requests.post(url, headers=self.headers, json=payload, timeout=8)
             if resp.status_code in [200, 201]:
                 res_data = resp.json()
+                order_status = res_data.get("orderStatus", "TRANSIT")
+                if order_status in ["REJECTED", "CANCELLED"]:
+                    reason = res_data.get("remarks", res_data.get("errorMessage", "Order Rejected by Dhan"))
+                    logger.error(f"DhanBroker: Order REJECTED on Dhan [{action}] {quantity}x {clean_symbol} (SecurityID: {sec_id}) | Reason: {reason}")
+                    return {"status": "REJECTED", "reason": reason, "response": res_data}
+
                 order_id = res_data.get("orderId", "DHAN-SUCCESS")
-                logger.info(f"DhanBroker: Order PLACED successfully on Dhan [{action}] {quantity}x {clean_symbol} | OrderID: {order_id}")
+                logger.info(f"DhanBroker: Order PLACED successfully on Dhan [{action}] {quantity}x {clean_symbol} (SecurityID: {sec_id}) | OrderID: {order_id}")
                 if action == "BUY":
                     self.local_positions[symbol] = {
                         "symbol": symbol,
