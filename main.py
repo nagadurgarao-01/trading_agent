@@ -106,10 +106,16 @@ class TradingSystemOrchestrator:
                 if is_approved:
                     # 6. Execution Agent Order Placement
                     order = self.execution_agent.execute_trade(proposal, quantity)
-                    await self.broadcast_log(
-                        f"TRADE EXECUTED: [{proposal['action']}] {quantity}x {symbol} @ INR {ltp:.2f} | SL: INR {proposal['suggested_stop_loss']} | TGT: INR {proposal['suggested_target']}",
-                        "CRITICAL"
-                    )
+                    if order.get("status") in ["SUCCESS", "FILLED"]:
+                        await self.broadcast_log(
+                            f"TRADE EXECUTED: [{proposal['action']}] {quantity}x {symbol} @ INR {ltp:.2f} | SL: INR {proposal['suggested_stop_loss']} | TGT: INR {proposal['suggested_target']}",
+                            "CRITICAL"
+                        )
+                    else:
+                        await self.broadcast_log(
+                            f"BROKER REJECTED [{proposal['action']}] {symbol}: {order.get('reason', 'Order Failed')}",
+                            "WARNING"
+                        )
                 else:
                     await self.broadcast_log(
                         f"RISK REJECTED [{proposal['action']}] {symbol}: {risk_reason}",
