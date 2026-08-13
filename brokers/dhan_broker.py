@@ -19,6 +19,7 @@ class DhanBroker(BaseBroker):
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+        self.local_positions = {}
         logger.info(f"DhanBroker initialized for Client ID: {self.client_id}")
 
     def get_account_balance(self) -> Dict[str, float]:
@@ -81,6 +82,19 @@ class DhanBroker(BaseBroker):
                 res_data = resp.json()
                 order_id = res_data.get("orderId", "DHAN-SUCCESS")
                 logger.info(f"DhanBroker: Order PLACED successfully on Dhan [{action}] {quantity}x {clean_symbol} | OrderID: {order_id}")
+                if action == "BUY":
+                    self.local_positions[symbol] = {
+                        "symbol": symbol,
+                        "qty": quantity,
+                        "entry_price": current_market_price,
+                        "current_price": current_market_price,
+                        "stop_loss": stop_loss,
+                        "target": target,
+                        "unrealized_pnl": 0.0
+                    }
+                elif action == "SELL" and symbol in self.local_positions:
+                    del self.local_positions[symbol]
+
                 return {
                     "order_id": order_id,
                     "symbol": symbol,
@@ -106,18 +120,28 @@ class DhanBroker(BaseBroker):
             if resp.status_code == 200:
                 raw_positions = resp.json()
                 for pos in raw_positions if isinstance(raw_positions, list) else []:
-                    positions_list.append({
-                        "symbol": pos.get("tradingSymbol", "") + ".NS",
-                        "qty": pos.get("netQty", 0),
-                        "entry_price": float(pos.get("buyAvg", 0.0)),
-                        "current_price": float(pos.get("lastTradedPrice", 0.0)),
-                        "stop_loss": 0.0,
-                        "target": 0.0,
-                        "unrealized_pnl": float(pos.get("unrealizedProfit", 0.0))
-                    })
+                    net_qty = int(pos.get("netQty", 0))
+                    if net_qty != 0:
+                        tsym = pos.get("tradingSymbol", "")
+                        clean_sym = tsym if tsym.endswith(".NS") else f"{tsym}.NS"
+                        positions_list.append({
+                            "symbol": clean_sym,
+                            "qty": abs(net_qty),
+                            "entry_price": float(pos.get("buyAvg", 0.0)),
+                            "current_price": float(pos.get("lastTradedPrice", 0.0)),
+                            "stop_loss": 0.0,
+                            "target": 0.0,
+                            "unrealized_pnl": float(pos.get("unrealizedProfit", 0.0))
+                        })
         except Exception as e:
             logger.error(f"DhanBroker: Exception fetching positions: {e}")
             
+        # Merge local in-memory position fallback if API delayed
+        if hasattr(self, 'local_positions'):
+            for sym, pos in self.local_positions.items():
+                if not any(p["symbol"] == sym for p in positions_list):
+                    positions_list.append(pos)
+
         return positions_list
 
     def close_position(self, symbol: str, reason: str = "MANUAL") -> Dict[str, Any]:
