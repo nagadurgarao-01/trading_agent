@@ -132,13 +132,17 @@ class DhanBroker(BaseBroker):
                     if net_qty != 0:
                         tsym = pos.get("tradingSymbol", "")
                         clean_sym = tsym if tsym.endswith(".NS") else f"{tsym}.NS"
+                        buy_avg = float(pos.get("buyAvg", pos.get("costPrice", pos.get("averagePrice", 0.0))))
+                        ltp_val = float(pos.get("lastTradedPrice", pos.get("ltp", buy_avg)))
+                        local_meta = self.local_positions.get(clean_sym, {})
+                        
                         positions_list.append({
                             "symbol": clean_sym,
                             "qty": abs(net_qty),
-                            "entry_price": float(pos.get("buyAvg", 0.0)),
-                            "current_price": float(pos.get("lastTradedPrice", 0.0)),
-                            "stop_loss": 0.0,
-                            "target": 0.0,
+                            "entry_price": buy_avg if buy_avg > 0 else local_meta.get("entry_price", 0.0),
+                            "current_price": ltp_val if ltp_val > 0 else local_meta.get("current_price", buy_avg),
+                            "stop_loss": local_meta.get("stop_loss", 0.0),
+                            "target": local_meta.get("target", 0.0),
                             "unrealized_pnl": float(pos.get("unrealizedProfit", 0.0))
                         })
         except Exception as e:
