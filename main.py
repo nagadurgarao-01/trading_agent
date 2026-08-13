@@ -21,6 +21,7 @@ from agents.execution_agent import ExecutionAgent
 
 from storage.db import db_repo
 from core.lifecycle import lifecycle_engine
+from core.models import SystemState
 
 # Dashboard Telemetry Integration
 from dashboard.backend.app import app, agent_system_ref
