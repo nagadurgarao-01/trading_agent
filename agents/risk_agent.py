@@ -20,6 +20,7 @@ SECTOR_MAP = {
 class RiskAgent:
     def __init__(self):
         logger.info("Risk & Portfolio Manager Agent initialized (with Sector Diversification Enforcement)")
+        self.start_of_day_equity = None
 
     def get_stock_sector(self, symbol: str) -> str:
         return SECTOR_MAP.get(symbol, "Other")
@@ -47,9 +48,11 @@ class RiskAgent:
         open_positions_count = len(open_positions_list)
 
         # Rule 1: Circuit Breaker - Max Daily Loss Check
-        initial_cap = account_balance.get("initial_capital", settings.INITIAL_CAPITAL)
-        portfolio_val = account_balance.get("portfolio_value", initial_cap)
-        drawdown_pct = ((initial_cap - portfolio_val) / initial_cap) * 100.0
+        portfolio_val = account_balance.get("portfolio_value", settings.INITIAL_CAPITAL)
+        if self.start_of_day_equity is None or self.start_of_day_equity <= 0:
+            self.start_of_day_equity = portfolio_val
+
+        drawdown_pct = ((self.start_of_day_equity - portfolio_val) / self.start_of_day_equity) * 100.0 if self.start_of_day_equity > 0 else 0.0
         
         if drawdown_pct >= settings.MAX_DAILY_LOSS_PCT:
             reason = f"CIRCUIT BREAKER: Daily drawdown ({drawdown_pct:.2f}%) exceeded limit ({settings.MAX_DAILY_LOSS_PCT}%)."
