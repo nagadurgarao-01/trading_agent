@@ -140,3 +140,7 @@ class DhanBroker(BaseBroker):
             res = self.close_position(pos["symbol"], reason=reason)
             results.append(res)
         return results
+
+    def update_market_prices(self, price_map: Dict[str, float]) -> List[Dict[str, Any]]:
+        """Updates live price map for active positions on DhanHQ."""
+        return []

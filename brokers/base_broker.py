@@ -27,3 +27,8 @@ class BaseBroker(ABC):
     def square_off_all(self, reason: str = "AUTO_SQUARE_OFF") -> List[Dict[str, Any]]:
         """Exits all open positions immediately"""
         pass
+
+    @abstractmethod
+    def update_market_prices(self, price_map: Dict[str, float]) -> List[Dict[str, Any]]:
+        """Updates market prices for active positions and handles auto stop loss / target exits"""
+        pass
