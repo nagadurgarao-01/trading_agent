@@ -49,8 +49,8 @@ class DhanBroker(BaseBroker):
             logger.error(f"DhanBroker: Exception fetching balance: {e}")
             
         return {
-            "cash_balance": 100000.0,
-            "portfolio_value": 100000.0,
+            "cash_balance": 0.0,
+            "portfolio_value": 0.0,
             "realized_pnl": 0.0,
             "unrealized_pnl": 0.0,
             "initial_capital": settings.INITIAL_CAPITAL,
