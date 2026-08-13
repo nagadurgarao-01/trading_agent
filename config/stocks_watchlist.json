@@ -1,14 +1,10 @@
 {
   "market": "NSE",
   "watchlist": [
-    { "symbol": "RELIANCE.NS", "name": "Reliance Industries Ltd", "sector": "Energy" },
-    { "symbol": "TCS.NS", "name": "Tata Consultancy Services Ltd", "sector": "IT" },
-    { "symbol": "INFY.NS", "name": "Infosys Ltd", "sector": "IT" },
-    { "symbol": "HDFCBANK.NS", "name": "HDFC Bank Ltd", "sector": "Banking" },
-    { "symbol": "ICICIBANK.NS", "name": "ICICI Bank Ltd", "sector": "Banking" },
-    { "symbol": "SBIN.NS", "name": "State Bank of India", "sector": "Banking" },
-    { "symbol": "BHARTIARTL.NS", "name": "Bharti Airtel Ltd", "sector": "Telecom" },
-    { "symbol": "ITC.NS", "name": "ITC Ltd", "sector": "FMCG" },
-    { "symbol": "LT.NS", "name": "Larsen & Toubro Ltd", "sector": "Construction" }
+    { "symbol": "IDEA.NS", "name": "Vodafone Idea Ltd", "sector": "Telecom" },
+    { "symbol": "YESBANK.NS", "name": "Yes Bank Ltd", "sector": "Banking" },
+    { "symbol": "RENUKA.NS", "name": "Shree Renuka Sugars Ltd", "sector": "FMCG" },
+    { "symbol": "SOUTHBANK.NS", "name": "South Indian Bank Ltd", "sector": "Banking" },
+    { "symbol": "SUZLON.NS", "name": "Suzlon Energy Ltd", "sector": "Energy" }
   ]
 }

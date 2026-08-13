@@ -5,16 +5,11 @@ from utils.logger import logger
 
 # Sector Mapping to prevent correlated bets
 SECTOR_MAP = {
-    "RELIANCE.NS": "Energy",
-    "TCS.NS": "IT",
-    "INFY.NS": "IT",
-    "HDFCBANK.NS": "Banking",
-    "ICICIBANK.NS": "Banking",
-    "SBIN.NS": "Banking",
-    "BHARTIARTL.NS": "Telecom",
-    "ITC.NS": "FMCG",
-    "LT.NS": "Construction",
-    "TATAMOTORS.NS": "Auto"
+    "IDEA.NS": "Telecom",
+    "YESBANK.NS": "Banking",
+    "RENUKA.NS": "FMCG",
+    "SOUTHBANK.NS": "Banking",
+    "SUZLON.NS": "Energy"
 }
 
 class RiskAgent:
