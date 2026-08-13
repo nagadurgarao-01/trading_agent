@@ -61,6 +61,13 @@ class TradingSystemOrchestrator:
         await self.broadcast_log("--- Starting Market Analysis Cycle ---", "INFO")
         
         account_bal = self.broker.get_account_balance()
+        current_state = lifecycle_engine.update_market_state()
+        
+        if current_state == SystemState.SQUARE_OFF:
+            auto_closed = self.broker.square_off_all(reason="MANDATORY_1515_SQUARE_OFF")
+            if auto_closed:
+                await self.broadcast_log(f"MANDATORY 15:15 IST SQUARE-OFF: Exited {len(auto_closed)} positions before market close.", "CRITICAL")
+            return
         await telemetry_hub.broadcast("METRICS_UPDATE", account_bal)
 
         price_map = {}
@@ -92,7 +99,7 @@ class TradingSystemOrchestrator:
             # 4. Strategy & Reasoning Agent Proposal
             proposal = strategy_agent.evaluate_opportunity(quote, tech_summary, sentiment_summary)
             
-            if proposal["action"] != "HOLD":
+            if proposal["action"] != "HOLD" and lifecycle_engine.can_open_new_positions():
                 open_positions = self.broker.get_positions()
                 
                 # 5. Risk Management Agent Validation (with Mistake Memory check)
