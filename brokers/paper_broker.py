@@ -103,12 +103,12 @@ class PaperBroker(BaseBroker):
                 
                 # Check Stop Loss trigger
                 if pos["stop_loss"] > 0 and current_price <= pos["stop_loss"]:
-                    logger.warning(f"PaperBroker: STOP LOSS TRIGGERED for {symbol} @ ₹{current_price} (SL: ₹{pos['stop_loss']})")
+                    logger.warning(f"PaperBroker: STOP LOSS TRIGGERED for {symbol} @ INR {current_price:.2f} (SL: INR {pos['stop_loss']:.2f})")
                     exit_record = self.close_position(symbol, reason="STOP_LOSS")
                     auto_exits.append(exit_record)
                 # Check Target trigger
                 elif pos["target"] > 0 and current_price >= pos["target"]:
-                    logger.info(f"PaperBroker: TARGET REACHED for {symbol} @ ₹{current_price} (TGT: ₹{pos['target']})")
+                    logger.info(f"PaperBroker: TARGET REACHED for {symbol} @ INR {current_price:.2f} (TGT: INR {pos['target']:.2f})")
                     exit_record = self.close_position(symbol, reason="TARGET_HIT")
                     auto_exits.append(exit_record)
 

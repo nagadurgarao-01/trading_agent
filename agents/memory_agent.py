@@ -44,7 +44,7 @@ class MistakeMemoryAgent:
         
         # Self-reflection pattern tag
         pattern = "STOP_LOSS_HIT"
-        reflection = f"Trade on {symbol} lost ₹{abs(loss_amount):.2f}. Entered on '{entry_reason}', exited via '{exit_reason}'."
+        reflection = f"Trade on {symbol} lost INR {abs(loss_amount):.2f}. Entered on '{entry_reason}', exited via '{exit_reason}'."
         
         if exit_reason == "STOP_LOSS":
             if market_data and market_data.get("rsi", 50) > 70:
@@ -69,7 +69,7 @@ class MistakeMemoryAgent:
         
         self.mistakes.append(record)
         self.save_memory()
-        logger.warning(f"🧠 MISTAKE RECORDED [{pattern}] {symbol}: {reflection}")
+        logger.warning(f"[MistakeMemory] MISTAKE RECORDED [{pattern}] {symbol}: {reflection}")
         return record
 
     def check_for_past_mistake(self, symbol: str, proposed_action: str, tech_data: Dict[str, Any]) -> Dict[str, Any]:
