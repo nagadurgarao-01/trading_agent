@@ -107,4 +107,18 @@ class StorageRepository:
                 VALUES (?, ?, ?, ?, ?)
             """, (event_type, component, message, json.dumps(details or {}), datetime.now().isoformat()))
 
+    def save_daily_snapshot(self, account: Dict[str, Any], positions: List[Dict[str, Any]]):
+        today = datetime.now().date().isoformat()
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO daily_snapshots (date, portfolio_value, cash_balance, realized_pnl, unrealized_pnl, open_positions_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(date) DO UPDATE SET portfolio_value=excluded.portfolio_value,
+                cash_balance=excluded.cash_balance, realized_pnl=excluded.realized_pnl,
+                unrealized_pnl=excluded.unrealized_pnl, open_positions_json=excluded.open_positions_json,
+                created_at=excluded.created_at
+            """, (today, account.get("portfolio_value", 0), account.get("cash_balance", 0),
+                  account.get("realized_pnl", 0), account.get("unrealized_pnl", 0),
+                  json.dumps(positions), datetime.now().isoformat()))
+
 db_repo = StorageRepository()

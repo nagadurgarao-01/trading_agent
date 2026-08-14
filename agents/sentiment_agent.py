@@ -32,12 +32,6 @@ class SentimentAgent:
         except Exception as e:
             logger.warning(f"SentimentAgent: Headline fetch fallback triggered for {symbol}: {e}")
             
-        if not headlines:
-            headlines = [
-                f"{clean_symbol} quarterly revenue shows steady 12% YoY growth in line with estimates.",
-                f"Analysts maintain buy rating on {clean_symbol} following positive sector outlook."
-            ]
-            
         return headlines
 
     def analyze_with_gemini(self, symbol: str, headlines: List[str]) -> Dict[str, Any]:
@@ -52,7 +46,7 @@ class SentimentAgent:
                 headlines="\n- ".join(headlines)
             )
 
-            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.LLM_MODEL}:generateContent?key={api_key}"
             payload = {
                 "contents": [{"parts": [{"text": prompt_text}]}],
                 "generationConfig": {"response_mime_type": "application/json"}
@@ -72,6 +66,10 @@ class SentimentAgent:
 
     def analyze_sentiment(self, symbol: str) -> Dict[str, Any]:
         headlines = self.fetch_headlines(symbol)
+        if not headlines:
+            return {"symbol": symbol, "sentiment_score": 0.0, "confidence": 0.0,
+                    "headlines_count": 0, "key_drivers": ["No verified current headlines available"],
+                    "recommendation": "NEUTRAL"}
         
         # Try Gemini LLM Analysis first if API key is present
         if settings.GEMINI_API_KEY:

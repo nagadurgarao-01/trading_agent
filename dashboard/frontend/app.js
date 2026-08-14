@@ -154,6 +154,19 @@ async function triggerKillSwitch() {
   }
 }
 
+async function closePosition(symbol) {
+  if (!confirm(`Square off ${symbol}?`)) return;
+  try {
+    const res = await fetch(`/api/positions/${encodeURIComponent(symbol)}/close`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok || !["SUCCESS", "FILLED"].includes(data.status)) {
+      throw new Error(data.reason || data.detail || "Position exit was rejected");
+    }
+  } catch (err) {
+    alert(`Could not square off ${symbol}: ${err.message || err}`);
+  }
+}
+
 function updateClock() {
   const clockEl = document.getElementById("live-clock");
   if (clockEl) {

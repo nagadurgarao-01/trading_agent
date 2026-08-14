@@ -29,6 +29,10 @@ class StrategyAgent:
             reasoning = f"Strong Bullish Technical Alignment (Supertrend Bullish, Price above VWAP) + Non-negative sentiment ({sentiment_score})"
         
         elif tech_signal == "BEARISH" and sentiment_score <= 0.2:
+            if not settings.ALLOW_SHORT_SELLING:
+                return {"symbol": symbol, "action": "HOLD", "ltp": ltp, "confidence": 0.0,
+                        "suggested_entry": ltp, "suggested_stop_loss": 0.0, "suggested_target": 0.0,
+                        "reasoning": "Bearish setup detected, but short selling is disabled by policy."}
             action = "SELL"
             confidence = round(0.75 + (abs(sentiment_score) * 0.2), 2)
             sl_dist = max(ltp * (settings.DEFAULT_STOP_LOSS_PCT / 100.0), abs(ltp - tech_summary.get("vwap", ltp)))

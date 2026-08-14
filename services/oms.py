@@ -25,7 +25,7 @@ class OrderManagementSystem:
             target=intent.target
         )
 
-        if order.get("status") == "FILLED":
+        if order.get("status") in {"FILLED", "SUCCESS"}:
             # 3. Create OrderFill Record
             fill = OrderFill(
                 intent_id=intent.intent_id,
@@ -33,7 +33,7 @@ class OrderManagementSystem:
                 side=order.get("action", "BUY"),
                 quantity=order.get("quantity", 0),
                 signal_price=intent.suggested_entry,
-                fill_price=order.get("fill_price", intent.suggested_entry),
+                fill_price=order.get("fill_price", order.get("price", intent.suggested_entry)),
                 realized_slippage_pct=order.get("realized_slippage_pct", 0.0),
                 fee_inr=order.get("brokerage_fee", 20.0)
             )
@@ -42,4 +42,4 @@ class OrderManagementSystem:
             return {"status": "SUCCESS", "fill": fill, "order": order}
 
         db_repo.log_audit("ORDER_REJECTED", "OMS", f"Broker rejected order for {intent.symbol}", order)
-        return {"status": "REJECTED", "reason": order.get("reason", "BROKER_REJECTED")}
+        return {"status": "REJECTED", "reason": order.get("reason", "BROKER_REJECTED"), "order": order}

@@ -16,7 +16,8 @@ class TechnicalAgent:
 
     def calculate_vwap(self, df: pd.DataFrame) -> pd.Series:
         tp = (df["high"] + df["low"] + df["close"]) / 3
-        vwap = (tp * df["volume"]).cumsum() / (df["volume"].cumsum() + 1e-10)
+        sessions = pd.Series(df.index.date, index=df.index)
+        vwap = (tp * df["volume"]).groupby(sessions).cumsum() / (df["volume"].groupby(sessions).cumsum() + 1e-10)
         return vwap
 
     def calculate_supertrend(self, df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> pd.DataFrame:

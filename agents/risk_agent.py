@@ -1,4 +1,6 @@
 from typing import Dict, Any, Tuple, List
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from config.settings import settings
 from agents.memory_agent import memory_agent
 from utils.logger import logger
@@ -16,6 +18,20 @@ class RiskAgent:
     def __init__(self):
         logger.info("Risk & Portfolio Manager Agent initialized (with Sector Diversification Enforcement)")
         self.start_of_day_equity = None
+        self.equity_date = None
+
+    def is_daily_loss_limit_breached(self, account_balance: Dict[str, float]) -> Tuple[bool, str]:
+        today = datetime.now(ZoneInfo(settings.TIMEZONE)).date()
+        portfolio_val = account_balance.get("portfolio_value", 0.0)
+        if portfolio_val <= 0:
+            return True, "Invalid broker portfolio value; blocking new orders."
+        if self.equity_date != today:
+            self.equity_date = today
+            self.start_of_day_equity = portfolio_val
+        drawdown_pct = ((self.start_of_day_equity - portfolio_val) / self.start_of_day_equity) * 100.0
+        if drawdown_pct >= settings.MAX_DAILY_LOSS_PCT:
+            return True, f"CIRCUIT BREAKER: Daily drawdown ({drawdown_pct:.2f}%) exceeded limit ({settings.MAX_DAILY_LOSS_PCT}%)."
+        return False, ""
 
     def get_stock_sector(self, symbol: str) -> str:
         return SECTOR_MAP.get(symbol, "Other")
@@ -44,13 +60,8 @@ class RiskAgent:
 
         # Rule 1: Circuit Breaker - Max Daily Loss Check
         portfolio_val = account_balance.get("portfolio_value", settings.INITIAL_CAPITAL)
-        if self.start_of_day_equity is None or self.start_of_day_equity <= 0:
-            self.start_of_day_equity = portfolio_val
-
-        drawdown_pct = ((self.start_of_day_equity - portfolio_val) / self.start_of_day_equity) * 100.0 if self.start_of_day_equity > 0 else 0.0
-        
-        if drawdown_pct >= settings.MAX_DAILY_LOSS_PCT:
-            reason = f"CIRCUIT BREAKER: Daily drawdown ({drawdown_pct:.2f}%) exceeded limit ({settings.MAX_DAILY_LOSS_PCT}%)."
+        breached, reason = self.is_daily_loss_limit_breached(account_balance)
+        if breached:
             logger.warning(f"RiskAgent: REJECTED {symbol} - {reason}")
             return False, 0, reason
 

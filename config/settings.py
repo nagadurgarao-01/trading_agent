@@ -8,6 +8,9 @@ class TradingSettings(BaseModel):
     # System & Environment
     ENV: str = os.getenv("ENV", "paper")  # "paper" or "live"
     TIMEZONE: str = "Asia/Kolkata"
+    LIVE_TRADING_ENABLED: bool = os.getenv("LIVE_TRADING_ENABLED", "false").lower() == "true"
+    ALLOW_SHORT_SELLING: bool = os.getenv("ALLOW_SHORT_SELLING", "false").lower() == "true"
+    ORDER_STATUS_TIMEOUT_SECONDS: int = int(os.getenv("ORDER_STATUS_TIMEOUT_SECONDS", "12"))
     
     # Market Trading Hours (IST)
     PRE_MARKET_START: str = "09:00"
@@ -36,9 +39,12 @@ class TradingSettings(BaseModel):
     
     # Dashboard Server Config
     DASHBOARD_HOST: str = os.getenv("DASHBOARD_HOST", "0.0.0.0")
-    DASHBOARD_PORT: int = 8000
+    DASHBOARD_PORT: int = int(os.getenv("DASHBOARD_PORT", "8000"))
     WEBSOCKET_URL: str = "ws://127.0.0.1:8000/ws/telemetry"
     DASHBOARD_USER: str = os.getenv("DASHBOARD_USER", "admin")
     DASHBOARD_PASS: str = os.getenv("DASHBOARD_PASS", "CHANGE_ME_SECURE_PASSWORD")
+
+    def is_live_trading_permitted(self) -> bool:
+        return self.ENV.lower() == "live" and self.BROKER_TYPE.lower() == "dhan" and self.LIVE_TRADING_ENABLED
 
 settings = TradingSettings()

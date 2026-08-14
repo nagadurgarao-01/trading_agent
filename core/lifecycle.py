@@ -1,4 +1,5 @@
 from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from core.models import SystemState
 from config.settings import settings
 from utils.logger import logger
@@ -13,7 +14,7 @@ class TradingLifecycleEngine:
             self.state = SystemState.STOPPED
             return self.state
 
-        now_time = datetime.now().time()
+        now_time = datetime.now(ZoneInfo(settings.TIMEZONE)).time()
         
         # Parse time strings (e.g. "09:15", "15:30")
         t_pre = time.fromisoformat(settings.PRE_MARKET_START)
@@ -45,5 +46,10 @@ class TradingLifecycleEngine:
         self.is_kill_switch_active = True
         self.state = SystemState.STOPPED
         logger.critical("Lifecycle Engine: KILL-SWITCH ACTIVATED. All new entries blocked.")
+
+    def reset_kill_switch(self):
+        self.is_kill_switch_active = False
+        self.update_market_state()
+        logger.warning("Lifecycle Engine: kill-switch reset; market-hours rules remain active.")
 
 lifecycle_engine = TradingLifecycleEngine()

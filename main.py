@@ -24,7 +24,7 @@ from core.lifecycle import lifecycle_engine
 from core.models import SystemState
 
 # Dashboard Telemetry Integration
-from dashboard.backend.app import app, agent_system_ref
+from dashboard.backend.app import app, set_agent_system
 from dashboard.backend.telemetry import telemetry_hub
 
 class TradingSystemOrchestrator:
@@ -39,7 +39,9 @@ class TradingSystemOrchestrator:
             self.watchlist = data.get("watchlist", [])
             
         # Initialize Broker & Execution Agent (DhanHQ vs Paper)
-        if settings.BROKER_TYPE == "dhan" and settings.ENV == "live":
+        if settings.BROKER_TYPE == "dhan" and settings.ENV.lower() == "live":
+            if not settings.is_live_trading_permitted():
+                raise RuntimeError("Live mode requires LIVE_TRADING_ENABLED=true. Refusing to submit unconfirmed live orders.")
             logger.info("Connecting to LIVE DhanHQ Broker API...")
             self.broker = DhanBroker()
         else:
@@ -49,8 +51,7 @@ class TradingSystemOrchestrator:
         self.execution_agent = ExecutionAgent(self.broker)
         
         # Inject reference for dashboard APIs
-        global agent_system_ref
-        agent_system_ref = self
+        set_agent_system(self)
 
         self.is_running = True
 
@@ -61,11 +62,18 @@ class TradingSystemOrchestrator:
     async def run_market_cycle(self):
         await self.broadcast_log("--- Starting Market Analysis Cycle ---", "INFO")
         
-        account_bal = self.broker.get_account_balance()
+        account_bal = await asyncio.to_thread(self.broker.get_account_balance)
         current_state = lifecycle_engine.update_market_state()
+
+        breached, reason = risk_agent.is_daily_loss_limit_breached(account_bal)
+        if breached:
+            lifecycle_engine.trigger_kill_switch()
+            auto_closed = await asyncio.to_thread(self.broker.square_off_all, "DAILY_LOSS_CIRCUIT_BREAKER")
+            await self.broadcast_log(f"{reason} Kill-switch activated; exited {len(auto_closed)} positions.", "CRITICAL")
+            return
         
         if current_state == SystemState.SQUARE_OFF:
-            auto_closed = self.broker.square_off_all(reason="MANDATORY_1515_SQUARE_OFF")
+            auto_closed = await asyncio.to_thread(self.broker.square_off_all, "MANDATORY_1515_SQUARE_OFF")
             if auto_closed:
                 await self.broadcast_log(f"MANDATORY 15:15 IST SQUARE-OFF: Exited {len(auto_closed)} positions before market close.", "CRITICAL")
             return
@@ -78,7 +86,7 @@ class TradingSystemOrchestrator:
             name = item["name"]
 
             # 1. Fetch Latest Market Quote
-            quote = market_data_agent.get_latest_quote(symbol)
+            quote = await asyncio.to_thread(market_data_agent.get_latest_quote, symbol)
             if not quote:
                 continue
             
@@ -86,11 +94,11 @@ class TradingSystemOrchestrator:
             price_map[symbol] = ltp
 
             # 2. Technical Analysis Agent (Frozen 60m Intraday Candles)
-            df_candles = market_data_agent.fetch_stock_data(symbol, period="30d", interval="60m")
+            df_candles = await asyncio.to_thread(market_data_agent.fetch_stock_data, symbol, "30d", "60m")
             tech_summary = technical_agent.analyze(df_candles)
             
             # 3. Sentiment Analysis Agent
-            sentiment_summary = sentiment_agent.analyze_sentiment(symbol)
+            sentiment_summary = await asyncio.to_thread(sentiment_agent.analyze_sentiment, symbol)
 
             await self.broadcast_log(
                 f"{symbol} (INR {ltp}) | Tech: {tech_summary['signal']} | Sentiment: {sentiment_summary['sentiment_score']}", 
@@ -101,7 +109,7 @@ class TradingSystemOrchestrator:
             proposal = strategy_agent.evaluate_opportunity(quote, tech_summary, sentiment_summary)
             
             if proposal["action"] != "HOLD" and lifecycle_engine.can_open_new_positions():
-                open_positions = self.broker.get_positions()
+                open_positions = await asyncio.to_thread(self.broker.get_positions)
                 
                 # 5. Risk Management Agent Validation (with Mistake Memory check)
                 is_approved, quantity, risk_reason = risk_agent.validate_trade(
@@ -113,7 +121,7 @@ class TradingSystemOrchestrator:
 
                 if is_approved:
                     # 6. Execution Agent Order Placement
-                    order = self.execution_agent.execute_trade(proposal, quantity)
+                    order = await asyncio.to_thread(self.execution_agent.execute_trade, proposal, quantity)
                     if order.get("status") in ["SUCCESS", "FILLED"]:
                         await self.broadcast_log(
                             f"TRADE EXECUTED: [{proposal['action']}] {quantity}x {symbol} @ INR {ltp:.2f} | SL: INR {proposal['suggested_stop_loss']} | TGT: INR {proposal['suggested_target']}",
@@ -131,7 +139,7 @@ class TradingSystemOrchestrator:
                     )
 
         # 7. Update Positions and Check Stop Loss / Target Triggers
-        auto_exits = self.broker.update_market_prices(price_map)
+        auto_exits = await asyncio.to_thread(self.broker.update_market_prices, price_map)
         for exit_item in auto_exits:
             await self.broadcast_log(
                 f"AUTO EXIT: {exit_item.get('symbol')} ({exit_item.get('exit_reason')}) @ INR {exit_item.get('price')}",
@@ -139,9 +147,11 @@ class TradingSystemOrchestrator:
             )
 
         # Broadcast updated positions and telemetry to Dashboard
-        updated_positions = self.broker.get_positions()
+        updated_positions = await asyncio.to_thread(self.broker.get_positions)
+        final_account_bal = await asyncio.to_thread(self.broker.get_account_balance)
+        await asyncio.to_thread(db_repo.save_daily_snapshot, final_account_bal, updated_positions)
         await telemetry_hub.broadcast("POSITIONS_UPDATE", updated_positions)
-        await telemetry_hub.broadcast("METRICS_UPDATE", self.broker.get_account_balance())
+        await telemetry_hub.broadcast("METRICS_UPDATE", final_account_bal)
 
     async def main_loop(self):
         await self.broadcast_log("Agent Core Event Loop Started. Running intraday cycles every 10 seconds...", "INFO")
@@ -174,4 +184,3 @@ if __name__ == "__main__":
     # Start Agent System Loop
     orchestrator = TradingSystemOrchestrator()
     asyncio.run(orchestrator.main_loop())
-
