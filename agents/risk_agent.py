@@ -77,6 +77,7 @@ class RiskAgent:
             return False, 0, reason
 
         # Rule 2: Duplicate Symbol Check (Do not double-buy same open stock)
+        target_sector = self.get_stock_sector(symbol)
         for open_pos in open_positions_list:
             open_sym = open_pos.get("symbol", "")
             if open_sym == symbol:
