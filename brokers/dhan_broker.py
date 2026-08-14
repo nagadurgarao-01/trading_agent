@@ -34,18 +34,25 @@ class DhanBroker(BaseBroker):
             resp = requests.get(url, headers=self.headers, timeout=8)
             if resp.status_code == 200:
                 data = resp.json()
-                avail_cash = float(data.get("availabelBalance", data.get("sodLimit", 100000.0)))
+                avail_cash = float(data.get("availabelBalance", 0.0))
+                utilized = float(data.get("utilizedAmount", 0.0))
                 collateral = float(data.get("collateralAmount", 0.0))
                 realized_pnl = float(data.get("realizedProfitLoss", 0.0))
                 unrealized_pnl = float(data.get("unrealizedProfitLoss", 0.0))
+                sod_limit = float(data.get("sodLimit", avail_cash + utilized))
+                
+                # Total portfolio equity = free cash + deployed position margin + unrealized PnL
+                portfolio_val = round(avail_cash + utilized + collateral + unrealized_pnl, 2)
+                if portfolio_val <= 0:
+                    portfolio_val = round(sod_limit, 2)
                 
                 return {
                     "cash_balance": round(avail_cash, 2),
-                    "portfolio_value": round(avail_cash + collateral, 2),
+                    "portfolio_value": portfolio_val,
                     "realized_pnl": round(realized_pnl, 2),
                     "unrealized_pnl": round(unrealized_pnl, 2),
                     "initial_capital": settings.INITIAL_CAPITAL,
-                    "total_return_pct": round((realized_pnl / settings.INITIAL_CAPITAL) * 100, 2)
+                    "total_return_pct": round((realized_pnl / (sod_limit if sod_limit > 0 else settings.INITIAL_CAPITAL)) * 100, 2)
                 }
             else:
                 logger.warning(f"DhanBroker: Fund limits API returned status {resp.status_code}: {resp.text}")
