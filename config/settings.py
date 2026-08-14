@@ -22,8 +22,9 @@ class TradingSettings(BaseModel):
     # Risk Management Parameters
     INITIAL_CAPITAL: float = 100000.0  # INR ₹1,00,000 for paper trading
     MAX_DAILY_LOSS_PCT: float = 2.0     # Max 2% loss per day before circuit breaker
-    MAX_POSITION_SIZE_PCT: float = 15.0 # Max 15% capital per trade
-    MAX_OPEN_POSITIONS: int = 3         # Max simultaneous open trades
+    MAX_POSITION_SIZE_PCT: float = 15.0 # Max % capital per trade
+    MAX_CAPITAL_PER_TRADE: float = float(os.getenv("MAX_CAPITAL_PER_TRADE", "150.0")) # INR ₹150 max per trade
+    MAX_OPEN_POSITIONS: int = int(os.getenv("MAX_OPEN_POSITIONS", "10"))              # Max 10 simultaneous open trades
     MIN_RISK_REWARD_RATIO: float = 1.5  # Minimum 1:1.5 Risk-Reward
     DEFAULT_STOP_LOSS_PCT: float = 1.0  # 1% default SL below entry
     DEFAULT_TARGET_PCT: float = 2.0     # 2% default Target above entry

@@ -66,12 +66,11 @@ class RiskAgent:
             logger.warning(f"RiskAgent: REJECTED {symbol} - {reason}")
             return False, 0, reason
 
-        # Rule 2: Sector Concentration Check (Max 1 position per sector cluster)
-        target_sector = self.get_stock_sector(symbol)
+        # Rule 2: Duplicate Symbol Check (Do not double-buy same open stock)
         for open_pos in open_positions_list:
             open_sym = open_pos.get("symbol", "")
-            if self.get_stock_sector(open_sym) == target_sector:
-                reason = f"SECTOR CONCENTRATION RISK: Already holding {open_sym} in {target_sector} sector (Correlation Protection)."
+            if open_sym == symbol:
+                reason = f"ALREADY HOLDING: Existing active position open for {symbol}."
                 logger.warning(f"RiskAgent: REJECTED {symbol} - {reason}")
                 return False, 0, reason
 
@@ -83,7 +82,7 @@ class RiskAgent:
                 logger.warning(f"RiskAgent: REJECTED {symbol} (Mistake Memory Triggered) - {reason}")
                 return False, 0, reason
 
-        # Rule 4: Max Simultaneous Open Positions Check
+        # Rule 4: Max Simultaneous Open Positions Check (Up to 10 stocks)
         if open_positions_count >= settings.MAX_OPEN_POSITIONS:
             reason = f"MAX POSITIONS REACHED ({open_positions_count}/{settings.MAX_OPEN_POSITIONS})."
             logger.warning(f"RiskAgent: REJECTED {symbol} - {reason}")
@@ -101,9 +100,9 @@ class RiskAgent:
             logger.warning(f"RiskAgent: REJECTED {symbol} - {reason}")
             return False, 0, reason
 
-        # Rule 6: Position Sizing (Max % Capital per trade)
+        # Rule 6: Position Sizing (Max ₹150 capital allocation per trade)
         cash_balance = account_balance.get("cash_balance", 0.0)
-        max_capital_for_trade = portfolio_val * (settings.MAX_POSITION_SIZE_PCT / 100.0)
+        max_capital_for_trade = settings.MAX_CAPITAL_PER_TRADE
         usable_cash = min(cash_balance, max_capital_for_trade)
         
         quantity = int(usable_cash // ltp)
