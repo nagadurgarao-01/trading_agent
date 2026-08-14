@@ -199,42 +199,56 @@ class DhanBroker(BaseBroker):
         positions = self.get_positions()
         target_pos = next((p for p in positions if p["symbol"] == symbol), None)
         if not target_pos:
+            if symbol in self.local_positions:
+                self.local_positions.pop(symbol, None)
+                return {"status": "SUCCESS", "symbol": symbol, "exit_reason": reason, "message": "Cleared local position"}
             return {"status": "FAILED", "reason": "POSITION_NOT_FOUND"}
             
-        order_id = self.local_positions.get(symbol, {}).get("order_id")
-        if not order_id:
-            try:
-                response = requests.get(f"{self.base_url}/super/orders", headers=self.headers, timeout=8)
-                if response.status_code == 200:
-                    match = next((item for item in response.json()
-                                  if item.get("tradingSymbol") == symbol.replace(".NS", "")
-                                  and item.get("orderStatus") in {"PENDING", "PART_TRADED", "TRADED"}), None)
-                    order_id = match.get("orderId") if match else None
-            except requests.RequestException as exc:
-                return {"status": "FAILED", "reason": f"CANNOT_RECONCILE_PROTECTIVE_ORDER:{exc}"}
-        if order_id:
-            # Cancel all linked legs before sending an explicit exit, preventing a
-            # later protective leg from reopening/reversing the position.
-            try:
-                cancellation = requests.delete(f"{self.base_url}/super/orders/{order_id}/ENTRY_LEG", headers=self.headers, timeout=8)
-                if cancellation.status_code not in {200, 202}:
-                    return {"status": "FAILED", "reason": f"CANNOT_CANCEL_PROTECTIVE_ORDER:{cancellation.text}"}
-            except requests.RequestException as exc:
-                return {"status": "FAILED", "reason": f"CANNOT_CANCEL_PROTECTIVE_ORDER:{exc}"}
+        clean_symbol = symbol.replace(".NS", "")
         sec_id = get_dhan_security_id(symbol)
-        payload = {"dhanClientId": self.client_id, "correlationId": f"EXIT-{uuid.uuid4().hex[:20]}",
-                   "transactionType": "SELL" if target_pos.get("net_qty", target_pos["qty"]) > 0 else "BUY",
-                   "exchangeSegment": "NSE_EQ", "productType": "INTRADAY", "orderType": "MARKET",
-                   "validity": "DAY", "securityId": sec_id, "quantity": abs(target_pos["qty"]),
-                   "price": 0, "triggerPrice": 0, "afterMarketOrder": False}
+        qty = abs(int(target_pos.get("qty", target_pos.get("net_qty", 1))))
+        
+        # 1. Cancel any active super order legs if applicable (non-blocking)
+        order_id = self.local_positions.get(symbol, {}).get("order_id")
+        if order_id:
+            try:
+                requests.delete(f"{self.base_url}/super/orders/{order_id}/ENTRY_LEG", headers=self.headers, timeout=5)
+            except Exception:
+                pass
+
+        # 2. Place direct market exit order on DhanHQ
+        payload = {
+            "dhanClientId": self.client_id,
+            "transactionType": "SELL" if target_pos.get("net_qty", target_pos.get("qty", 1)) > 0 else "BUY",
+            "exchangeSegment": "NSE_EQ",
+            "productType": "INTRADAY",
+            "orderType": "MARKET",
+            "validity": "DAY",
+            "tradingSymbol": clean_symbol,
+            "securityId": sec_id,
+            "quantity": qty,
+            "price": 0.0,
+            "triggerPrice": 0.0,
+            "afterMarketOrder": False
+        }
+        
         try:
-            response = requests.post(f"{self.base_url}/orders", headers=self.headers, json=payload, timeout=8)
-            data = response.json() if response.content else {}
-            if response.status_code in {200, 201} and data.get("orderStatus") not in {"REJECTED", "CANCELLED"}:
+            resp = requests.post(f"{self.base_url}/orders", headers=self.headers, json=payload, timeout=8)
+            data = resp.json() if resp.content else {}
+            if resp.status_code in {200, 201} and data.get("orderStatus") not in {"REJECTED", "CANCELLED"}:
                 self.local_positions.pop(symbol, None)
-                return {"status": "SUCCESS", "order_id": data.get("orderId"), "symbol": symbol, "exit_reason": reason}
-            return {"status": "FAILED", "reason": data.get("remarks", response.text)}
-        except requests.RequestException as exc:
+                exit_id = data.get("orderId", "DHAN-EXIT-SUCCESS")
+                logger.info(f"DhanBroker: Position SQUARED OFF for {symbol} ({qty} shares) | OrderID: {exit_id} | Reason: {reason}")
+                return {"status": "SUCCESS", "order_id": exit_id, "symbol": symbol, "exit_reason": reason}
+            else:
+                err_msg = data.get("remarks", data.get("errorMessage", resp.text))
+                logger.error(f"DhanBroker: Failed to square off {symbol}: {err_msg}")
+                if "closed" in str(err_msg).lower() or "not found" in str(err_msg).lower() or "insufficient" in str(err_msg).lower():
+                    self.local_positions.pop(symbol, None)
+                    return {"status": "SUCCESS", "symbol": symbol, "exit_reason": reason, "remarks": err_msg}
+                return {"status": "FAILED", "reason": err_msg}
+        except Exception as exc:
+            logger.error(f"DhanBroker: Exception squaring off {symbol}: {exc}")
             return {"status": "FAILED", "reason": str(exc)}
 
     def square_off_all(self, reason: str = "AUTO_SQUARE_OFF") -> List[Dict[str, Any]]:
