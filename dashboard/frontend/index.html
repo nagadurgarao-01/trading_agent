@@ -3,201 +3,124 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Multi-Agent Trading Intelligence | NSE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Autonomous Multi-Agent Trading System | Indian Stock Markets</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Navigation Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand-badge">
-          <div class="brand-icon">⚡</div>
-          <div>
-            <div class="brand-title">Antigravity Multi-Agent Trading</div>
-            <div class="brand-sub">Autonomous NSE Execution & Risk Engine</div>
-          </div>
+  <!-- Header Nav -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-icon">📈</div>
+      <div>
+        <h1>Multi-Agent Trading Intelligence</h1>
+        <div class="subtitle">Indian Stock Markets (NSE) • Autonomous Execution & Risk Engine</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <div id="trading-mode-badge" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #64b5f6; background: rgba(100, 181, 246, 0.15); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(100, 181, 246, 0.3);">📄 PAPER MODE</div>
+      <div id="live-clock" style="font-family: monospace; font-size: 14px; font-weight: 600; color: #00e676; background: rgba(0, 230, 118, 0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.2);"></div>
+      <div class="status-badge" id="system-status">
+        <div class="dot-pulse"></div>
+        <span>Market Live (9:15 - 15:30 IST)</span>
+      </div>
+      <button class="btn-danger" onclick="triggerKillSwitch()">🚨 Emergency Kill-Switch</button>
+    </div>
+  </header>
+
+  <!-- Live Mode Readiness Tracker Banner -->
+  <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(100, 181, 246, 0.3); background: rgba(18, 25, 38, 0.95);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 15px; font-weight: 700; color: #e0e0e0;">🎯 Live Mode Readiness Progress</span>
+        <span id="readiness-status-badge" style="font-family: monospace; font-size: 12px; font-weight: 700; color: #ffb300; background: rgba(255, 179, 0, 0.15); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255, 179, 0, 0.3);">🔒 IN PROGRESS (0/50 Trades)</span>
+      </div>
+      <div style="font-family: monospace; font-size: 13px; color: #90caf9;" id="readiness-progress-text">0 / 50 Trades Completed (0%)</div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
+      <div id="readiness-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #2196f3, #00e676); transition: width 0.4s ease;"></div>
+    </div>
+
+    <!-- Readiness Criteria Checklist -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 12px; color: #b0bec5;">
+      <div>• Sample Gate: <strong id="readiness-trades-count" style="color: #fff;">0 / 50 Trades</strong></div>
+      <div>• Realized Expectancy: <strong id="readiness-expectancy" style="color: #fff;">₹0 / trade (Target > +₹1,330)</strong></div>
+      <div>• Avg Slippage: <strong id="readiness-slippage" style="color: #00e676;">0.00% (< 0.08% target)</strong></div>
+      <div>• 95% Confidence Interval: <strong id="readiness-ci" style="color: #ffb300;">Evaluating...</strong></div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div class="kpi-grid">
+    <div class="card">
+      <div class="card-title">Net Realized PnL</div>
+      <div class="card-value val-green" id="val-pnl">₹0.00</div>
+      <div class="subtitle" id="val-return">+0.00% Return</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Portfolio Equity</div>
+      <div class="card-value" id="val-equity">₹1,00,000</div>
+      <div class="subtitle" id="val-cash">Cash: ₹1,00,000</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Win Rate (%)</div>
+      <div class="card-value val-green" id="val-winrate">75.0%</div>
+      <div class="subtitle">Win / Loss Ratio</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Profit Factor</div>
+      <div class="card-value" id="val-profit-factor">1.85</div>
+      <div class="subtitle">Target: > 1.5</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Max Drawdown</div>
+      <div class="card-value val-red" id="val-drawdown">0.50%</div>
+      <div class="subtitle">Max Threshold: 2.0%</div>
+    </div>
+  </div>
+
+  <!-- Dashboard Split View -->
+  <div class="dashboard-layout">
+    <!-- Active Positions -->
+    <div class="card">
+      <div class="section-title">📌 Active Positions & Live Orders</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Qty</th>
+            <th>Avg Entry</th>
+            <th>LTP</th>
+            <th>Stop Loss</th>
+            <th>Target</th>
+            <th>Unrealized PnL</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="positions-tbody">
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">No active open positions</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live Multi-Agent Log Console -->
+    <div class="card">
+      <div class="section-title">🤖 Sub-Agent Decision Stream</div>
+      <div class="console-box" id="console-stream">
+        <div class="log-entry">
+          <span class="log-time">[09:15:00]</span>
+          <span class="log-INFO">[System] Multi-Agent Engine initialized. Streaming NSE stock telemetry...</span>
         </div>
       </div>
-
-      <div class="header-right">
-        <div id="trading-mode-badge" class="mode-pill mode-paper">📄 PAPER MODE</div>
-        <div id="live-clock" class="clock-pill">--:--:-- IST</div>
-        <div class="status-pill status-live" id="system-status">
-          <span class="live-dot"></span>
-          <span id="market-status-text">Market Live (09:15 - 15:30 IST)</span>
-        </div>
-        <button class="btn-danger kill-btn" onclick="triggerKillSwitch()">
-          <span class="btn-icon">🚨</span> Emergency Kill-Switch
-        </button>
-      </div>
-    </header>
-
-    <!-- Live Readiness Progress Tracker -->
-    <section class="readiness-section">
-      <div class="readiness-card">
-        <div class="readiness-header">
-          <div class="readiness-title-area">
-            <span class="readiness-icon">🎯</span>
-            <span class="readiness-title">Live Mode Readiness Protocol</span>
-            <span id="readiness-status-badge" class="badge-evaluating">🔒 IN PROGRESS (0/50 Trades)</span>
-          </div>
-          <div class="readiness-counter" id="readiness-progress-text">0 / 50 Trades (0%)</div>
-        </div>
-
-        <div class="progress-track">
-          <div id="readiness-progress-bar" class="progress-fill" style="width: 0%;"></div>
-        </div>
-
-        <div class="readiness-grid">
-          <div class="readiness-item">
-            <span class="item-label">Sample Gate</span>
-            <strong class="item-val" id="readiness-trades-count">0 / 50 Trades</strong>
-          </div>
-          <div class="readiness-item">
-            <span class="item-label">Realized Expectancy</span>
-            <strong class="item-val" id="readiness-expectancy">₹0.00 / trade</strong>
-          </div>
-          <div class="readiness-item">
-            <span class="item-label">Avg Slippage</span>
-            <strong class="item-val text-green" id="readiness-slippage">0.0000% (&lt; 0.08%)</strong>
-          </div>
-          <div class="readiness-item">
-            <span class="item-label">95% Confidence Gate</span>
-            <strong class="item-val text-amber" id="readiness-ci">Evaluating (Needs N=50)</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Key Performance Indicators Grid -->
-    <section class="kpi-section">
-      <div class="kpi-card">
-        <div class="kpi-meta">
-          <span class="kpi-label">Net Realized PnL</span>
-          <span class="kpi-pill val-neutral" id="val-return">+0.00%</span>
-        </div>
-        <div class="kpi-value text-green" id="val-pnl">₹0.00</div>
-        <div class="kpi-footer">Today's Closed Trades PnL</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-meta">
-          <span class="kpi-label">Portfolio Equity</span>
-          <span class="kpi-pill" id="val-cash-pill">100% Cash</span>
-        </div>
-        <div class="kpi-value" id="val-equity">₹1,00,000.00</div>
-        <div class="kpi-footer" id="val-cash">Available Free Margin: ₹1,00,000.00</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-meta">
-          <span class="kpi-label">Win Rate</span>
-          <span class="kpi-pill text-green">Target &gt; 60%</span>
-        </div>
-        <div class="kpi-value text-green" id="val-winrate">75.0%</div>
-        <div class="kpi-footer">Profitable / Closed Trades</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-meta">
-          <span class="kpi-label">Profit Factor</span>
-          <span class="kpi-pill text-green">Target &gt; 1.5</span>
-        </div>
-        <div class="kpi-value text-green" id="val-profit-factor">1.85</div>
-        <div class="kpi-footer">Gross Profit / Gross Loss</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-meta">
-          <span class="kpi-label">Max Daily Drawdown</span>
-          <span class="kpi-pill text-amber">Circuit: 2.0%</span>
-        </div>
-        <div class="kpi-value text-red" id="val-drawdown">0.50%</div>
-        <div class="kpi-footer">Relative to Day Baseline</div>
-      </div>
-    </section>
-
-    <!-- Main Operational Workspace -->
-    <main class="workspace-grid">
-      <!-- Active Positions Panel -->
-      <section class="panel positions-panel">
-        <div class="panel-header">
-          <div class="panel-title-area">
-            <span class="panel-icon">📌</span>
-            <h2 class="panel-title">Active Positions & Live Orders</h2>
-          </div>
-          <div class="panel-actions">
-            <span class="live-tag">LIVE MARKET FEED</span>
-          </div>
-        </div>
-
-        <div class="table-container">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Qty</th>
-                <th>Avg Entry</th>
-                <th>LTP</th>
-                <th>Stop Loss</th>
-                <th>Target</th>
-                <th>Unrealized PnL</th>
-                <th style="text-align: right;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="positions-body">
-              <tr>
-                <td colspan="8" class="empty-state">
-                  <div class="empty-icon">📂</div>
-                  <div class="empty-text">No active open positions</div>
-                  <div class="empty-sub">Agent is scanning NSE watchlist every 10s for R:R ≥ 1.50 setups</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Sub-Agent Decision Stream & Telemetry Console -->
-      <section class="panel console-panel">
-        <div class="panel-header">
-          <div class="panel-title-area">
-            <span class="panel-icon">🤖</span>
-            <h2 class="panel-title">Sub-Agent Decision Stream</h2>
-          </div>
-          <div class="console-controls">
-            <button class="filter-chip active" onclick="filterLogs('ALL')">All</button>
-            <button class="filter-chip" onclick="filterLogs('TRADE')">Trades</button>
-            <button class="filter-chip" onclick="filterLogs('RISK')">Risk</button>
-            <button class="filter-chip btn-clear" onclick="clearConsole()">Clear</button>
-          </div>
-        </div>
-
-        <div class="terminal-body" id="console-stream">
-          <div class="log-entry log-system">
-            <span class="log-time">[09:15:00]</span>
-            <span class="log-tag tag-system">[System]</span>
-            <span class="log-msg">Multi-Agent Engine initialized. Streaming NSE stock telemetry...</span>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Footer System Status -->
-    <footer class="app-footer">
-      <div class="footer-left">
-        <span>Framework: Python Asyncio • FastAPI • DhanHQ v2 API</span>
-        <span class="footer-sep">•</span>
-        <span>Risk Rules: Supertrend(10,3), VWAP, Max 15% Size, Auto Square-Off 15:15 IST</span>
-      </div>
-      <div class="footer-right">
-        <span id="socket-status" class="socket-online">● WebSocket Connected</span>
-      </div>
-    </footer>
+    </div>
   </div>
 
   <script src="/static/app.js"></script>
