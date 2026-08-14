@@ -29,8 +29,9 @@ class RiskAgent:
             self.equity_date = today
             self.start_of_day_equity = portfolio_val
         drawdown_pct = ((self.start_of_day_equity - portfolio_val) / self.start_of_day_equity) * 100.0
-        if drawdown_pct >= settings.MAX_DAILY_LOSS_PCT:
-            return True, f"CIRCUIT BREAKER: Daily drawdown ({drawdown_pct:.2f}%) exceeded limit ({settings.MAX_DAILY_LOSS_PCT}%)."
+        max_loss_pct = 15.0 if self.start_of_day_equity < 1000.0 else settings.MAX_DAILY_LOSS_PCT
+        if drawdown_pct >= max_loss_pct:
+            return True, f"CIRCUIT BREAKER: Daily drawdown ({drawdown_pct:.2f}%) exceeded limit ({max_loss_pct:.1f}%)."
         return False, ""
 
     def get_stock_sector(self, symbol: str) -> str:

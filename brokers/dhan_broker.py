@@ -115,6 +115,7 @@ class DhanBroker(BaseBroker):
                 order_id = res_data.get("orderId")
                 if not order_id:
                     return {"status": "REJECTED", "reason": "MISSING_ORDER_ID", "response": res_data}
+                
                 deadline = time.monotonic() + settings.ORDER_STATUS_TIMEOUT_SECONDS
                 while time.monotonic() < deadline:
                     status_data = self._get_order_status(order_id)
@@ -123,11 +124,16 @@ class DhanBroker(BaseBroker):
                         res_data = status_data or res_data
                         break
                     time.sleep(0.5)
-                if order_status not in {"TRADED", "PART_TRADED"}:
-                    return {"status": "REJECTED", "reason": f"ORDER_NOT_FILLED:{order_status}", "order_id": order_id, "response": res_data}
+
+                if order_status in {"REJECTED", "CANCELLED", "EXPIRED"}:
+                    return {"status": "REJECTED", "reason": f"ORDER_REJECTED:{order_status}", "order_id": order_id, "response": res_data}
+
                 fill_price = float(res_data.get("averageTradedPrice", current_market_price) or current_market_price)
+                if fill_price <= 0:
+                    fill_price = current_market_price
+
                 self.local_positions[symbol] = {"stop_loss": stop_loss, "target": target, "order_id": order_id}
-                logger.info(f"DhanBroker: Super Order TRADED [{action}] {quantity}x {clean_symbol} | OrderID: {order_id}")
+                logger.info(f"DhanBroker: Order ACCEPTED/FILLED [{action}] {quantity}x {clean_symbol} | Status: {order_status} | OrderID: {order_id}")
 
                 return {
                     "order_id": order_id,
