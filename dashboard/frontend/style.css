@@ -54,7 +54,6 @@
   --shadow-glow-red: 0 4px 20px rgba(255, 69, 58, 0.35);
 
   --ease-apple: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Base Reset */
@@ -101,9 +100,7 @@ body {
   gap: 20px;
 }
 
-/* ==========================================================================
-   Apple Glass Card Component
-   ========================================================================== */
+/* Apple Glass Card Component */
 .glass-card {
   background: var(--glass-card);
   backdrop-filter: blur(28px) saturate(190%);
@@ -118,9 +115,7 @@ body {
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* ==========================================================================
-   Apple Top Navigation Bar
-   ========================================================================== */
+/* Apple Top Navigation Bar */
 .apple-nav {
   display: flex;
   justify-content: space-between;
@@ -179,9 +174,7 @@ body {
   gap: 10px;
 }
 
-/* ==========================================================================
-   Apple Pill Elements & Buttons
-   ========================================================================== */
+/* Apple Pill Elements & Buttons */
 .apple-pill {
   display: inline-flex;
   align-items: center;
@@ -276,9 +269,7 @@ body {
   transform: scale(0.98);
 }
 
-/* ==========================================================================
-   Readiness Protocol Banner
-   ========================================================================== */
+/* Readiness Protocol Banner */
 .readiness-card {
   padding: 20px 24px;
   display: flex;
@@ -388,9 +379,7 @@ body {
   color: var(--text-primary);
 }
 
-/* ==========================================================================
-   Bento Metrics Grid
-   ========================================================================== */
+/* Bento Metrics Grid */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
@@ -463,9 +452,7 @@ body {
   color: var(--text-tertiary);
 }
 
-/* ==========================================================================
-   Main Split Workspace (Positions + Decision Stream)
-   ========================================================================== */
+/* Main Split Workspace */
 .main-split-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
@@ -505,7 +492,7 @@ body {
   border-color: rgba(48, 209, 88, 0.3);
 }
 
-/* Apple Table Design */
+/* Apple Table */
 .table-scroll-wrap {
   overflow-x: auto;
 }
@@ -606,9 +593,7 @@ body {
   color: var(--text-tertiary);
 }
 
-/* ==========================================================================
-   Apple Terminal / Sub-Agent Stream
-   ========================================================================== */
+/* Apple Terminal */
 .filter-group {
   display: flex;
   align-items: center;
@@ -661,12 +646,6 @@ body {
   gap: 8px;
   line-height: 1.45;
   word-break: break-word;
-  animation: fadeIn 0.2s var(--ease-apple);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .t-time {
@@ -689,9 +668,7 @@ body {
 .t-msg-risk { color: #fde047; }
 .t-msg-error { color: #fda4af; }
 
-/* ==========================================================================
-   Apple Footer
-   ========================================================================== */
+/* Apple Footer */
 .apple-footer {
   display: flex;
   justify-content: space-between;
