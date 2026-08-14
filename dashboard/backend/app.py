@@ -1,7 +1,9 @@
+import re
 import os
 import secrets
 import time
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
+from collections import defaultdict
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -9,13 +11,46 @@ from dashboard.backend.telemetry import telemetry_hub
 from config.settings import settings
 from core.lifecycle import lifecycle_engine
 
-app = FastAPI(title="Trading Agent Performance Dashboard")
+app = FastAPI(title="Trading Agent Performance Dashboard", docs_url=None, redoc_url=None)
 security = HTTPBasic()
 
-def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
+# In-Memory Rate Limiting against Brute-Force Attacks (IP -> [timestamp, failed_attempts])
+failed_auth_attempts = defaultdict(list)
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_PERIOD_SECONDS = 300 # 5 minutes lockout
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Enforces OWASP standard security headers on all HTTP responses."""
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    return response
+
+def authenticate(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    
+    # Clean up expired timestamps older than 5 minutes
+    failed_auth_attempts[client_ip] = [
+        t for t in failed_auth_attempts[client_ip] if now - t < LOCKOUT_PERIOD_SECONDS
+    ]
+    
+    # Check if client IP is currently rate-limited
+    if len(failed_auth_attempts[client_ip]) >= MAX_FAILED_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. IP temporarily locked for 5 minutes.",
+        )
+
     correct_user = secrets.compare_digest(credentials.username, settings.DASHBOARD_USER)
     correct_pass = secrets.compare_digest(credentials.password, settings.DASHBOARD_PASS)
+    
     if not (correct_user and correct_pass):
+        failed_auth_attempts[client_ip].append(now)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -90,6 +125,8 @@ async def execute_kill_switch(user: str = Depends(authenticate)):
 
 @app.post("/api/positions/{symbol}/close")
 async def close_position(symbol: str, user: str = Depends(authenticate)):
+    if not re.match(r"^[A-Za-z0-9_.-]{1,30}$", symbol):
+        raise HTTPException(status_code=400, detail="Invalid stock symbol format")
     if not agent_system_ref:
         raise HTTPException(status_code=503, detail="Trading system is not ready")
     result = agent_system_ref.broker.close_position(symbol, reason=f"DASHBOARD_MANUAL:{user}")
