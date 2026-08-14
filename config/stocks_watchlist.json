@@ -4,7 +4,17 @@
     { "symbol": "IDEA.NS", "name": "Vodafone Idea Ltd", "sector": "Telecom" },
     { "symbol": "YESBANK.NS", "name": "Yes Bank Ltd", "sector": "Banking" },
     { "symbol": "RENUKA.NS", "name": "Shree Renuka Sugars Ltd", "sector": "FMCG" },
+    { "symbol": "UCOBANK.NS", "name": "UCO Bank", "sector": "Banking" },
+    { "symbol": "IOB.NS", "name": "Indian Overseas Bank", "sector": "Banking" },
+    { "symbol": "CENTRALBK.NS", "name": "Central Bank of India", "sector": "Banking" },
     { "symbol": "SOUTHBANK.NS", "name": "South Indian Bank Ltd", "sector": "Banking" },
-    { "symbol": "SUZLON.NS", "name": "Suzlon Energy Ltd", "sector": "Energy" }
+    { "symbol": "SUZLON.NS", "name": "Suzlon Energy Ltd", "sector": "Energy" },
+    { "symbol": "IDFCFIRSTB.NS", "name": "IDFC First Bank Ltd", "sector": "Banking" },
+    { "symbol": "NHPC.NS", "name": "NHPC Ltd", "sector": "Power" },
+    { "symbol": "SJVN.NS", "name": "SJVN Ltd", "sector": "Power" },
+    { "symbol": "PNB.NS", "name": "Punjab National Bank", "sector": "Banking" },
+    { "symbol": "NBCC.NS", "name": "NBCC (India) Ltd", "sector": "Infra" },
+    { "symbol": "IRFC.NS", "name": "Indian Railway Finance Corp", "sector": "Finance" },
+    { "symbol": "HUDCO.NS", "name": "Housing & Urban Dev Corp", "sector": "Finance" }
   ]
 }

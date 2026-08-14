@@ -10,8 +10,18 @@ SECTOR_MAP = {
     "IDEA.NS": "Telecom",
     "YESBANK.NS": "Banking",
     "RENUKA.NS": "FMCG",
+    "UCOBANK.NS": "Banking",
+    "IOB.NS": "Banking",
+    "CENTRALBK.NS": "Banking",
     "SOUTHBANK.NS": "Banking",
-    "SUZLON.NS": "Energy"
+    "SUZLON.NS": "Energy",
+    "IDFCFIRSTB.NS": "Banking",
+    "NHPC.NS": "Power",
+    "SJVN.NS": "Power",
+    "PNB.NS": "Banking",
+    "NBCC.NS": "Infra",
+    "IRFC.NS": "Finance",
+    "HUDCO.NS": "Finance"
 }
 
 class RiskAgent:
