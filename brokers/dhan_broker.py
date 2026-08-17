@@ -4,6 +4,7 @@ import uuid
 from typing import Dict, List, Any
 from brokers.base_broker import BaseBroker
 from brokers.instruments import get_dhan_security_id
+from agents.memory_agent import memory_agent
 from config.settings import settings
 from utils.logger import logger
 
@@ -260,5 +261,58 @@ class DhanBroker(BaseBroker):
         return results
 
     def update_market_prices(self, price_map: Dict[str, float]) -> List[Dict[str, Any]]:
-        """Updates live price map for active positions on DhanHQ."""
-        return []
+        """
+        Actively monitors live market prices against Stop Loss and Target thresholds
+        for all open Dhan positions and triggers automated exits.
+        """
+        auto_exits = []
+        positions = self.get_positions()
+        
+        for pos in positions:
+            symbol = pos["symbol"]
+            current_price = price_map.get(symbol, pos.get("current_price", 0.0))
+            if current_price <= 0:
+                continue
+
+            pos["current_price"] = current_price
+            entry_price = float(pos.get("entry_price", 0.0))
+            stop_loss = float(pos.get("stop_loss", 0.0))
+            target = float(pos.get("target", 0.0))
+
+            # Auto-assign protective SL & Target if uninitialized
+            if (stop_loss <= 0 or target <= 0) and entry_price > 0:
+                stop_loss = round(entry_price * (1.0 - settings.DEFAULT_STOP_LOSS_PCT / 100.0), 2)
+                target = round(entry_price * (1.0 + settings.DEFAULT_TARGET_PCT / 100.0), 2)
+                self.local_positions[symbol] = {
+                    "stop_loss": stop_loss,
+                    "target": target,
+                    "entry_price": entry_price
+                }
+                logger.info(f"DhanBroker: Calibrated protective levels for {symbol} | Entry: INR {entry_price:.2f} | SL: INR {stop_loss:.2f} | TGT: INR {target:.2f}")
+
+            # Check Stop Loss Breach (Long positions: LTP <= SL)
+            if stop_loss > 0 and current_price <= stop_loss:
+                logger.warning(f"DhanBroker: STOP LOSS TRIGGERED for {symbol} @ INR {current_price:.2f} (SL: INR {stop_loss:.2f})")
+                exit_record = self.close_position(symbol, reason="STOP_LOSS")
+                if exit_record.get("status") == "SUCCESS":
+                    exit_record["price"] = current_price
+                    auto_exits.append(exit_record)
+                    loss_amt = (current_price - entry_price) * pos.get("qty", 1)
+                    memory_agent.log_losing_trade(
+                        symbol=symbol,
+                        entry_price=entry_price,
+                        exit_price=current_price,
+                        loss_amount=loss_amt,
+                        entry_reason="Technical & Sentiment Strategy Signal",
+                        exit_reason="STOP_LOSS"
+                    )
+
+            # Check Target Hit (Long positions: LTP >= Target)
+            elif target > 0 and current_price >= target:
+                logger.info(f"DhanBroker: TARGET REACHED for {symbol} @ INR {current_price:.2f} (TGT: INR {target:.2f})")
+                exit_record = self.close_position(symbol, reason="TARGET_HIT")
+                if exit_record.get("status") == "SUCCESS":
+                    exit_record["price"] = current_price
+                    auto_exits.append(exit_record)
+
+        return auto_exits
