@@ -22,8 +22,11 @@ class StrategyAgent:
         if tech_signal == "BULLISH" and sentiment_score >= -0.2:
             action = "BUY"
             confidence = round(0.75 + (sentiment_score * 0.2), 2)
-            # Calculate Stop Loss & Target based on VWAP or percentage settings
-            sl_dist = max(ltp * (settings.DEFAULT_STOP_LOSS_PCT / 100.0), abs(ltp - tech_summary.get("vwap", ltp)))
+            # Bound SL distance between 0.8% (min) and 1.5% (max)
+            vwap_dist = abs(ltp - tech_summary.get("vwap", ltp))
+            min_sl = ltp * 0.008
+            max_sl = ltp * 0.015
+            sl_dist = max(min_sl, min(vwap_dist, max_sl))
             stop_loss = round(ltp - sl_dist, 2)
             target = round(ltp + (sl_dist * settings.MIN_RISK_REWARD_RATIO), 2)
             reasoning = f"Strong Bullish Technical Alignment (Supertrend Bullish, Price above VWAP) + Non-negative sentiment ({sentiment_score})"
@@ -35,7 +38,10 @@ class StrategyAgent:
                         "reasoning": "Bearish setup detected, but short selling is disabled by policy."}
             action = "SELL"
             confidence = round(0.75 + (abs(sentiment_score) * 0.2), 2)
-            sl_dist = max(ltp * (settings.DEFAULT_STOP_LOSS_PCT / 100.0), abs(ltp - tech_summary.get("vwap", ltp)))
+            vwap_dist = abs(ltp - tech_summary.get("vwap", ltp))
+            min_sl = ltp * 0.008
+            max_sl = ltp * 0.015
+            sl_dist = max(min_sl, min(vwap_dist, max_sl))
             stop_loss = round(ltp + sl_dist, 2)
             target = round(ltp - (sl_dist * settings.MIN_RISK_REWARD_RATIO), 2)
             reasoning = f"Bearish Technical Alignment (Supertrend Bearish, Price below VWAP) + Non-positive sentiment ({sentiment_score})"
